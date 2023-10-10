@@ -9,7 +9,7 @@ const serverlessConfiguration: AWS = {
   plugins: ['serverless-esbuild', 'serverless-offline', 'serverless-dotenv-plugin'],
   provider: {
     name: 'aws',
-    runtime: 'nodejs16.x',
+    runtime: 'nodejs18.x',
     region: 'ap-northeast-1',
     timeout: 900,
     memorySize: 128,
@@ -25,7 +25,7 @@ const serverlessConfiguration: AWS = {
   // import the function via paths
   functions: {
     crons: {
-      handler: 'src/crawler/starter.event',
+      handler: 'src/crawler/lambda.event',
       events: [
         {
           schedule: {
@@ -50,7 +50,7 @@ const serverlessConfiguration: AWS = {
       minify: false,
       sourcemap: true,
       exclude: ['aws-sdk'],
-      target: 'node16',
+      target: 'node18',
       define: { 'require.resolve': undefined },
       platform: 'node',
       concurrency: 10,
