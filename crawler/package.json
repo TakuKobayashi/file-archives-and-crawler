@@ -5,7 +5,8 @@
   "main": "serverless.ts",
   "scripts": {
     "format": "prettier --config .prettierrc --write \"**/*.ts\"",
-    "serverless": "serverless"
+    "serverless": "serverless",
+    "ts-node": "ts-node"
   },
   "engines": {
     "node": ">=14.15.0"
