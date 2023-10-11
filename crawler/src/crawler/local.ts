@@ -7,7 +7,11 @@ import { IpaScraper } from './scrapers/ipa-scraper';
   const ipaScrapers = new IpaScraper('https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html');
   const downloadFileUrls = await ipaScrapers.downloadFileUrls();
   for (const downloadFileUrl of downloadFileUrls) {
+    const rootDirPath = path.join('../archives', 'ipa-exams', path.dirname(downloadFileUrl.pathname));
+    if (!fs.existsSync(rootDirPath)) {
+      fs.mkdirSync(rootDirPath, { recursive: true });
+    }
     const fileRes = await axios.get(downloadFileUrl.href, { responseType: 'stream' });
-    fileRes.data.pipe(fs.createWriteStream(path.basename(downloadFileUrl.href)));
+    fileRes.data.pipe(fs.createWriteStream(path.join(rootDirPath, path.basename(downloadFileUrl.pathname))));
   }
 })();
