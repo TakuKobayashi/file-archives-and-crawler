@@ -1,5 +1,5 @@
 import { Octokit } from 'octokit';
-import { glob } from 'glob';
+import { glob } from 'fast-glob';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as _ from 'lodash';
@@ -11,7 +11,7 @@ const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
   const myGihubUserResponse = await octokit.rest.users.getAuthenticated();
   const uploadFiles = await glob('../archives/ipa-exams/**/*.*');
   const chunkUploadFiles = _.chunk(uploadFiles, 20);
-  for(const uploadFiles of chunkUploadFiles){
+  for (const uploadFiles of chunkUploadFiles) {
     const latestCommit = await octokit.rest.repos.getBranch({
       owner: myGihubUserResponse.data.login,
       repo: process.env.GITHUB_UPLOAD_FILE_REPO,
@@ -21,14 +21,14 @@ const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
       owner: myGihubUserResponse.data.login,
       repo: process.env.GITHUB_UPLOAD_FILE_REPO,
       tree_sha: latestCommit.data.commit.sha,
-      recursive: "true",
+      recursive: 'true',
     });
-    console.log(existFiles.map((existFile) => existFile.data.tree))
+    console.log(existFiles.data.tree.map((existFile) => existFile.data.tree));
     const uploadFilePathes = [];
     const createdBlobPromises = [];
     for (const filePath of uploadFiles) {
       const saveFilePath = filePath.split(path.sep).slice(1).join('/');
-      if(existFiles.data.tree.some((tree) => tree.path.includes(saveFilePath))) {
+      if (existFiles.data.tree.some((tree) => tree.path.includes(saveFilePath))) {
         continue;
       }
       uploadFilePathes.push(saveFilePath);
@@ -42,8 +42,8 @@ const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
       createdBlobPromises.push(createdBlobPromise);
     }
     const createdBlobs = await Promise.all(createdBlobPromises);
-    console.log(createdBlobs.map((createdBlob) => createdBlob.data))
-    if(createdBlobs.length <= 0) {
+    console.log(createdBlobs.map((createdBlob) => createdBlob.data));
+    if (createdBlobs.length <= 0) {
       continue;
     }
     const createdTree = await octokit.rest.git.createTree({
