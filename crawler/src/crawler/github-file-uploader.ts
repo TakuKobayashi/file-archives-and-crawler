@@ -23,7 +23,7 @@ const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
       tree_sha: latestCommit.data.commit.sha,
       recursive: 'true',
     });
-    console.log(existFiles.data.tree.map((existFile) => existFile.data.tree));
+    console.log(existFiles.data.tree);
     const uploadFilePathes = [];
     const createdBlobPromises = [];
     for (const filePath of uploadFiles) {
