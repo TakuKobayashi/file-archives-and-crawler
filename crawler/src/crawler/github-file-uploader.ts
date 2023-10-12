@@ -10,7 +10,7 @@ const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
 (async function () {
   const myGihubUserResponse = await octokit.rest.users.getAuthenticated();
   const uploadFiles = await glob('../archives/ipa-exams/**/*.*');
-  const chunkUploadFiles = _.chunk(uploadFiles, 10);
+  const chunkUploadFiles = _.chunk(uploadFiles, 20);
   for(const uploadFiles of chunkUploadFiles){
     const latestCommit = await octokit.rest.repos.getBranch({
       owner: myGihubUserResponse.data.login,
