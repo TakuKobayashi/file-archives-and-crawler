@@ -23,6 +23,7 @@ const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
       tree_sha: latestCommit.data.commit.sha,
       recursive: "true",
     });
+    console.log(existFiles.map((existFile) => existFile.data.tree))
     const uploadFilePathes = [];
     const createdBlobPromises = [];
     for (const filePath of uploadFiles) {
@@ -41,6 +42,7 @@ const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
       createdBlobPromises.push(createdBlobPromise);
     }
     const createdBlobs = await Promise.all(createdBlobPromises);
+    console.log(createdBlobs.map((createdBlob) => createdBlob.data))
     if(createdBlobs.length <= 0) {
       continue;
     }
@@ -61,16 +63,15 @@ const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
     const createdCommit = await octokit.rest.git.createCommit({
       owner: myGihubUserResponse.data.login,
       repo: process.env.GITHUB_UPLOAD_FILE_REPO,
-      message: `archives ipa-exams upload file count:${uploadFiles.length} ${now.toString()}`,
+      message: `archives ipa-exams upload ${now.toString()}`,
       tree: createdTree.data.sha,
       parents: [latestCommit.data.commit.sha],
     });
-    const updateRef = await octokit.rest.git.updateRef({
+    await octokit.rest.git.updateRef({
       owner: myGihubUserResponse.data.login,
       repo: process.env.GITHUB_UPLOAD_FILE_REPO,
       ref: `heads/${latestCommit.data.name}`,
       sha: createdCommit.data.sha,
     });
-    console.log(updateRef.data);
   }
 })();
