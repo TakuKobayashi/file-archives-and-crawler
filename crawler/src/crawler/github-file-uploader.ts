@@ -8,7 +8,7 @@ const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
 
 (async function () {
   const myGihubUserResponse = await octokit.rest.users.getAuthenticated();
-  const uploadFiles = await glob('../archives/ipa-exams/**/*.*');
+  const uploadFiles = await glob('../archives/www.ipa.go.jp/**/*.*');
   const chunkUploadFiles = _.chunk(uploadFiles, 20);
   const latestCommit = await octokit.rest.repos.getBranch({
     owner: myGihubUserResponse.data.login,
@@ -81,4 +81,4 @@ const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
     });
     lastCommitSha = createdCommit.data.sha;
   }
-})()
+})();

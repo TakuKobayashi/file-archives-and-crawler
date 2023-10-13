@@ -7,7 +7,7 @@ import { IpaScraper } from './scrapers/ipa-scraper';
   const ipaScrapers = new IpaScraper('https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html');
   const downloadFileUrls = await ipaScrapers.downloadFileUrls();
   for (const downloadFileUrl of downloadFileUrls) {
-    const rootDirPath = path.join('../archives', 'ipa-exams', path.dirname(downloadFileUrl.pathname));
+    const rootDirPath = path.join('../archives', downloadFileUrl.hostname, path.dirname(downloadFileUrl.pathname));
     if (!fs.existsSync(rootDirPath)) {
       fs.mkdirSync(rootDirPath, { recursive: true });
     }
