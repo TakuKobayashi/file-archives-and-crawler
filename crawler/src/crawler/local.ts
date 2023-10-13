@@ -1,17 +1,26 @@
 import axios from 'axios';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as _ from 'lodash';
 import { IpaScraper } from './scrapers/ipa-scraper';
+import { Github, GithubFileUploader } from '../util/github';
 
 (async function () {
   const ipaScrapers = new IpaScraper('https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html');
-  const downloadFileUrls = await ipaScrapers.downloadFileUrls();
-  for (const downloadFileUrl of downloadFileUrls) {
-    const rootDirPath = path.join('../archives', downloadFileUrl.hostname, path.dirname(downloadFileUrl.pathname));
-    if (!fs.existsSync(rootDirPath)) {
-      fs.mkdirSync(rootDirPath, { recursive: true });
+  const allDownloadFileUrls = await ipaScrapers.downloadFileUrls();
+  const github = new Github(process.env.GITHUB_UPLOAD_FILE_REPO);
+  const chunkDownloadFileUrls = _.chunk(allDownloadFileUrls, 20);
+  for (const downloadFileUrls of chunkDownloadFileUrls) {
+    const downloadPromises = [];
+    for (const downloadFileUrl of downloadFileUrls) {
+      downloadPromises.push(axios.get(downloadFileUrl.href, { responseType: 'arraybuffer' }));
     }
-    const fileRes = await axios.get(downloadFileUrl.href, { responseType: 'stream' });
-    fileRes.data.pipe(fs.createWriteStream(path.join(rootDirPath, path.basename(downloadFileUrl.pathname))));
+    const downloadResponses = await Promise.all(downloadPromises);
+    const githubUploaders: GithubFileUploader[] = downloadResponses.map((downloadResponse, index) => {
+      const downloadUrl = downloadFileUrls[index];
+      return {
+        savepath: ['archives', downloadUrl.hostname, downloadUrl.pathname].join('/'),
+        content: downloadResponse.data,
+      };
+    });
+    await github.uploadAndCommitFiles('file-uploads', githubUploaders);
   }
 })();
