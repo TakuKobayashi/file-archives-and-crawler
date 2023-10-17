@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as _ from 'lodash';
+import * as path from 'path';
 import { IpaScraper } from './scrapers/ipa-scraper';
 import { CGArtsScraper } from './scrapers/cgarts-scraper';
 import { Github, GithubFileUploader } from '../util/github';
@@ -9,7 +10,7 @@ import { Github, GithubFileUploader } from '../util/github';
   const allDownloadFileUrls = await ipaScrapers.downloadFileUrls();
   const cgartsScraper = new CGArtsScraper('https://www.cgarts.or.jp/v1/kentei/past/index.html');
   const callDownloadFileUrls = await cgartsScraper.downloadFileUrls();
-  for(const callDownloadFileUrl of callDownloadFileUrls) {
+  for (const callDownloadFileUrl of callDownloadFileUrls) {
     allDownloadFileUrls.push(callDownloadFileUrl);
   }
   const github = new Github(process.env.GITHUB_UPLOAD_FILE_REPO);
@@ -23,7 +24,7 @@ import { Github, GithubFileUploader } from '../util/github';
     const githubUploaders: GithubFileUploader[] = downloadResponses.map((downloadResponse, index) => {
       const downloadUrl = downloadFileUrls[index];
       return {
-        savepath: ['archives', downloadUrl.hostname, downloadUrl.pathname].join('/'),
+        savepath: path.join('archives', downloadUrl.hostname, downloadUrl.pathname).split(path.sep).join('/'),
         content: downloadResponse.data,
       };
     });
