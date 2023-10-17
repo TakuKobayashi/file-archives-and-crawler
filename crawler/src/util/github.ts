@@ -85,7 +85,7 @@ export class Github {
   private cachedMyUser: GithubUser | null = null;
   private cachedTargetBranch: GithubBranch | null = null;
   private catchedlastCommitSha: string | null = null;
-  private catchedTreesSet: Set<GithubTree> = new Set();
+  private catchedPathTreeMap: Map<string, GithubTree> = new Map();
 
   constructor(targetRepo: string) {
     this.targetRepo = targetRepo;
@@ -115,9 +115,9 @@ export class Github {
     return this.cachedTargetBranch;
   }
 
-  async loadTree(targetBranchName: string): Promise<GithubTree[]> {
-    if (this.catchedTreesSet.size > 0) {
-      return Array.from(this.catchedTreesSet);
+  async loadPathTreeMap(targetBranchName: string): Promise<Map<string, GithubTree>> {
+    if (this.catchedPathTreeMap.size > 0) {
+      return this.catchedPathTreeMap;
     }
     const targetBranch = await this.loadLatestBranch(targetBranchName);
     const myUser = await this.loadSelfUser();
@@ -128,18 +128,18 @@ export class Github {
       recursive: 'true',
     });
     for (const tree of currentTreeResponse.data.tree) {
-      this.catchedTreesSet.add(tree);
+      this.catchedPathTreeMap.set(tree.path, tree);
     }
-    return Array.from(this.catchedTreesSet);
+    return this.catchedPathTreeMap;
   }
 
   async uploadAndCommitFiles(targetBranchName: string, uploaders: GithubFileUploader[]) {
-    const trees = await this.loadTree(targetBranchName);
+    const treeMap = await this.loadPathTreeMap(targetBranchName);
     const myUser = await this.loadSelfUser();
     const uploadFilePathes = [];
     const createdBlobPromises = [];
     for (const uploader of uploaders) {
-      if (trees.some((tree) => tree.path.includes(uploader.savepath))) {
+      if (treeMap.has(uploader.savepath)) {
         continue;
       }
       const base64Content = Buffer.from(uploader.content).toString('base64');
@@ -186,7 +186,7 @@ export class Github {
       sha: createdCommitSha,
     });
     for (const tree of createdTree.tree) {
-      this.catchedTreesSet.add(tree);
+      this.catchedPathTreeMap.set(tree.path, tree);
     }
     this.catchedlastCommitSha = createdCommitSha;
   }
@@ -195,6 +195,6 @@ export class Github {
     this.cachedMyUser = null;
     this.cachedTargetBranch = null;
     this.catchedlastCommitSha = null;
-    this.catchedTreesSet = new Set();
+    this.catchedPathTreeMap.clear();
   }
 }
