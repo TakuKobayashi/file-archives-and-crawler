@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import axios from 'axios';
+import * as path from 'path';
 
 export abstract class ScraperBase {
   protected baseUrl: URL;
@@ -19,10 +20,28 @@ export abstract class ScraperBase {
     const childrenElements = $(filterNode).find('a');
     for (let i = 0; i < childrenElements.length; ++i) {
       const element = childrenElements[i.toString()];
-      const childUrl = new URL(this.baseUrl.origin);
-      childUrl.pathname = element.attribs.href;
-      childrenUrls.push(childUrl);
+      const linkText = element.attribs.href;
+      if (linkText.startsWith('http://') || linkText.startsWith('https://')) {
+        const childUrl = new URL(linkText);
+        childrenUrls.push(childUrl);
+      } else if (linkText.startsWith('/')) {
+        const childUrl = new URL(this.baseUrl.origin);
+        childUrl.pathname = element.attribs.href;
+        childrenUrls.push(childUrl);
+      } else {
+        const childUrl = new URL(this.baseUrl.href);
+        let pathname = '';
+        if (childUrl.pathname.endsWith('/')) {
+          pathname = path.join(childUrl.pathname, element.attribs.href);
+        } else {
+          pathname = path.join(path.dirname(childUrl.pathname), element.attribs.href);
+        }
+        childUrl.pathname = pathname.split(path.sep).join('/');
+        childrenUrls.push(childUrl);
+      }
     }
     return childrenUrls;
   }
+
+  abstract downloadFileUrls(): Promise<URL[]>;
 }

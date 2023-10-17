@@ -1,11 +1,17 @@
 import axios from 'axios';
 import * as _ from 'lodash';
 import { IpaScraper } from './scrapers/ipa-scraper';
+import { CGArtsScraper } from './scrapers/cgarts-scraper';
 import { Github, GithubFileUploader } from '../util/github';
 
 (async function () {
   const ipaScrapers = new IpaScraper('https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html');
   const allDownloadFileUrls = await ipaScrapers.downloadFileUrls();
+  const cgartsScraper = new CGArtsScraper('https://www.cgarts.or.jp/v1/kentei/past/index.html');
+  const callDownloadFileUrls = await cgartsScraper.downloadFileUrls();
+  for(const callDownloadFileUrl of callDownloadFileUrls) {
+    allDownloadFileUrls.push(callDownloadFileUrl);
+  }
   const github = new Github(process.env.GITHUB_UPLOAD_FILE_REPO);
   const chunkDownloadFileUrls = _.chunk(allDownloadFileUrls, 20);
   for (const downloadFileUrls of chunkDownloadFileUrls) {
@@ -22,5 +28,5 @@ import { Github, GithubFileUploader } from '../util/github';
       };
     });
     await github.uploadAndCommitFiles('file-uploads', githubUploaders);
-  }
+  }*/
 })();
