@@ -16,7 +16,7 @@ const branchName = 'file-uploads';
     allDownloadFileUrls.push(callDownloadFileUrl);
   }
   const github = new Github(process.env.GITHUB_UPLOAD_FILE_REPO);
-  const pathTreeMap = await this.loadPathTreeMap(branchName);
+  const pathTreeMap = await github.loadPathTreeMap(branchName);
   const chunkDownloadFileUrls = _.chunk(allDownloadFileUrls, 20);
   for (const downloadFileUrls of chunkDownloadFileUrls) {
     const downloadPromises = [];
