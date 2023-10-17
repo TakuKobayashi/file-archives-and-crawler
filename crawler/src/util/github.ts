@@ -150,6 +150,7 @@ export class Github {
         content: base64Content,
       });
       createdBlobPromises.push(createdBlobPromise);
+      uploadFilePathes.push(uploader.savepath);
     }
     const createdBlobs = await Promise.all(createdBlobPromises);
     if (createdBlobs.length <= 0) {
