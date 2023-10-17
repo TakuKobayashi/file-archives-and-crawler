@@ -133,7 +133,7 @@ export class Github {
     return this.catchedPathTreeMap;
   }
 
-  async uploadAndCommitFiles(targetBranchName: string, uploaders: GithubFileUploader[]) {
+  async uploadAndCommitFiles(targetBranchName: string, uploaders: GithubFileUploader[]): Promise<void> {
     const treeMap = await this.loadPathTreeMap(targetBranchName);
     const myUser = await this.loadSelfUser();
     const uploadFilePathes = [];
