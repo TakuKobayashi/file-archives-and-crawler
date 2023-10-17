@@ -28,5 +28,5 @@ import { Github, GithubFileUploader } from '../util/github';
       };
     });
     await github.uploadAndCommitFiles('file-uploads', githubUploaders);
-  }*/
+  }
 })();
