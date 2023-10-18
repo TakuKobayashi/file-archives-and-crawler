@@ -20,7 +20,8 @@ export abstract class ScraperBase {
     const childrenElements = $(filterNode).find('a');
     for (let i = 0; i < childrenElements.length; ++i) {
       const element = childrenElements[i.toString()];
-      const linkText = element.attribs.href;
+      // 全角英数字などがまぎれていることがあるのでNFKCで正規化する
+      const linkText = element.attribs.href.normalize('NFKC');
       if (linkText.startsWith('http://') || linkText.startsWith('https://')) {
         const childUrl = new URL(linkText);
         childrenUrls.push(childUrl);
