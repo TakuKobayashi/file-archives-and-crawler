@@ -1,7 +1,9 @@
 import * as cheerio from 'cheerio';
 import axios from 'axios';
+import { chunk } from 'lodash';
 import * as path from 'path';
 import * as Encoding from 'encoding-japanese';
+import { Github, GithubFileUploader } from '@/util/github';
 
 export abstract class ScraperBase {
   protected baseUrl: URL;
@@ -12,7 +14,7 @@ export abstract class ScraperBase {
 
   async loadWithCheerio(): Promise<cheerio.CheerioAPI> {
     const res = await axios.get(this.baseUrl.href, { responseType: 'arraybuffer' });
-    const unicodeBody = Encoding.convert(res.data, {to: "UNICODE",from: Encoding.detect(res.data)})
+    const unicodeBody = Encoding.convert(res.data, { to: 'UNICODE', from: Encoding.detect(res.data) });
     return cheerio.load(Encoding.codeToString(unicodeBody), null, false);
   }
 
@@ -46,4 +48,39 @@ export abstract class ScraperBase {
   }
 
   abstract downloadFileUrls(): Promise<URL[]>;
+
+  async downloadFilesAndUploadToGithub(uploadBranchName: string, fileRootPath: string): Promise<void> {
+    const downloadFileUrls = await this.downloadFileUrls();
+    await this.downloadFilesAndUploadToGithubFromUrls(uploadBranchName, fileRootPath, downloadFileUrls);
+  }
+
+  async downloadFilesAndUploadToGithubFromUrls(uploadBranchName: string, fileRootPath: string, downloadUrls: URL[]): Promise<void> {
+    const github = new Github(process.env.GITHUB_UPLOAD_FILE_REPO);
+    const pathTreeMap = await github.loadPathTreeMap(uploadBranchName);
+    const chunkDownloadFileUrls = chunk(downloadUrls, 20);
+    for (const downloadFileUrls of chunkDownloadFileUrls) {
+      const downloadPromises = [];
+      const willSavePathes = [];
+      for (const downloadFileUrl of downloadFileUrls) {
+        const willSavePath = path.join(fileRootPath, downloadFileUrl.hostname, downloadFileUrl.pathname).split(path.sep).join('/');
+        if (pathTreeMap.has(willSavePath)) {
+          continue;
+        }
+        downloadPromises.push(axios.get(downloadFileUrl.href, { responseType: 'arraybuffer' }));
+        willSavePathes.push(willSavePath);
+      }
+      if (downloadPromises.length <= 0) {
+        continue;
+      }
+      const downloadResponses = await Promise.all(downloadPromises);
+      const githubUploaders: GithubFileUploader[] = downloadResponses.map((downloadResponse, index) => {
+        const willSavePath = willSavePathes[index];
+        return {
+          savepath: willSavePath,
+          content: downloadResponse.data,
+        };
+      });
+      await github.uploadAndCommitFiles(uploadBranchName, githubUploaders);
+    }
+  }
 }
