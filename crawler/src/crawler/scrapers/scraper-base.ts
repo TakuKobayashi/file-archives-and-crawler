@@ -57,7 +57,7 @@ export abstract class ScraperBase {
   async downloadFilesAndUploadToGithubFromUrls(uploadBranchName: string, fileRootPath: string, downloadUrls: URL[]): Promise<void> {
     const github = new Github(process.env.UPLOAD_FILE_REPO);
     const pathTreeMap = await github.loadPathTreeMap(uploadBranchName);
-    const chunkDownloadFileUrls = chunk(downloadUrls, 20);
+    const chunkDownloadFileUrls = chunk(downloadUrls, 10);
     for (const downloadFileUrls of chunkDownloadFileUrls) {
       const downloadPromises = [];
       const willSavePathes = [];
