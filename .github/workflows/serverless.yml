@@ -21,7 +21,12 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: Register .env
       working-directory: ./crawler
-      run: touch .env
+      env:
+        PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        UPLOAD_FILE_REPO: ${{ secrets.UPLOAD_FILE_REPO }}
+      run: |
+        echo "PERSONAL_ACCESS_TOKEN=${PERSONAL_ACCESS_TOKEN}" >> ./.env
+        echo "UPLOAD_FILE_REPO=${UPLOAD_FILE_REPO}" >> ./.env
     - name: yarn install
       working-directory: ./crawler
       run: yarn install

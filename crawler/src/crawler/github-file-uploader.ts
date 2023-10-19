@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as _ from 'lodash';
 
 const targetBranch = 'master';
-const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
+const octokit = new Octokit({ auth: process.env.PERSONAL_ACCESS_TOKEN });
 
 (async function () {
   const myGihubUserResponse = await octokit.rest.users.getAuthenticated();
@@ -12,13 +12,13 @@ const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
   const chunkUploadFiles = _.chunk(uploadFiles, 20);
   const latestCommit = await octokit.rest.repos.getBranch({
     owner: myGihubUserResponse.data.login,
-    repo: process.env.GITHUB_UPLOAD_FILE_REPO,
+    repo: process.env.UPLOAD_FILE_REPO,
     branch: targetBranch,
   });
   let lastCommitSha = latestCommit.data.commit.sha;
   const existFiles = await octokit.rest.git.getTree({
     owner: myGihubUserResponse.data.login,
-    repo: process.env.GITHUB_UPLOAD_FILE_REPO,
+    repo: process.env.UPLOAD_FILE_REPO,
     tree_sha: latestCommit.data.commit.sha,
     recursive: 'true',
   });
@@ -41,7 +41,7 @@ const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
       const base64Content = fs.readFileSync(filePath, 'base64');
       const createdBlobPromise = octokit.rest.git.createBlob({
         owner: myGihubUserResponse.data.login,
-        repo: process.env.GITHUB_UPLOAD_FILE_REPO,
+        repo: process.env.UPLOAD_FILE_REPO,
         encoding: 'base64',
         content: base64Content,
       });
@@ -54,7 +54,7 @@ const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
     }
     const createdTree = await octokit.rest.git.createTree({
       owner: myGihubUserResponse.data.login,
-      repo: process.env.GITHUB_UPLOAD_FILE_REPO,
+      repo: process.env.UPLOAD_FILE_REPO,
       tree: createdBlobs.map((createdBlob, index) => {
         return {
           type: 'blob',
@@ -68,14 +68,14 @@ const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
     const now = new Date();
     const createdCommit = await octokit.rest.git.createCommit({
       owner: myGihubUserResponse.data.login,
-      repo: process.env.GITHUB_UPLOAD_FILE_REPO,
+      repo: process.env.UPLOAD_FILE_REPO,
       message: `archives ipa-exams upload ${now.toString()}`,
       tree: createdTree.data.sha,
       parents: [lastCommitSha],
     });
     await octokit.rest.git.updateRef({
       owner: myGihubUserResponse.data.login,
-      repo: process.env.GITHUB_UPLOAD_FILE_REPO,
+      repo: process.env.UPLOAD_FILE_REPO,
       ref: `heads/${latestCommit.data.name}`,
       sha: createdCommit.data.sha,
     });

@@ -3,7 +3,7 @@ import * as _ from 'lodash';
 import { OctokitResponse } from '@octokit/types';
 
 //const targetBranch = 'master';
-const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
+const octokit = new Octokit({ auth: process.env.PERSONAL_ACCESS_TOKEN });
 
 interface GithubUser {
   login: string;
