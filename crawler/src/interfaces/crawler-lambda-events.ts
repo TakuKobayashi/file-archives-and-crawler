@@ -1,5 +1,5 @@
 export interface CrawlerEventParams {
-  url: string;
+  rootUrl: string;
   crawlerType: string;
   uploadGithubRootPath: string;
   uploadGithubBranch: string;
