@@ -30,7 +30,7 @@ const serverlessConfiguration: AWS = {
         {
           schedule: {
             rate: ['rate(1 minute)'],
-            enabled: false,
+            enabled: true,
             input: {
               crawlParams: [
                 {
