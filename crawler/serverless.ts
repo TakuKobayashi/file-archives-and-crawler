@@ -32,11 +32,20 @@ const serverlessConfiguration: AWS = {
             rate: ['rate(1 minute)'],
             enabled: false,
             input: {
-              key1: 'value1',
-              key2: 'value2',
-              stageParams: {
-                stage: 'dev',
-              },
+              crawlParams: [
+                {
+                  rootUrl: 'https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html',
+                  crawlerType: 'ipa',
+                  uploadGithubRootPath: 'file-uploads',
+                  uploadGithubBranch: 'archives',
+                },
+                {
+                  rootUrl: 'https://www.cgarts.or.jp/v1/kentei/past/index.html',
+                  crawlerType: 'cgarts',
+                  uploadGithubRootPath: 'file-uploads',
+                  uploadGithubBranch: 'archives',
+                },
+              ],
             },
           },
         },
