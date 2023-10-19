@@ -152,6 +152,8 @@ export class Github {
       createdBlobPromises.push(createdBlobPromise);
       uploadFilePathes.push(uploader.savepath);
     }
+    // clear and save memory
+    uploaders.splice(0)
     const createdBlobs = await Promise.all(createdBlobPromises);
     if (createdBlobs.length <= 0) {
       return;
