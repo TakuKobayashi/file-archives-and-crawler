@@ -36,14 +36,14 @@ const serverlessConfiguration: AWS = {
                 {
                   rootUrl: 'https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html',
                   crawlerType: 'ipa',
-                  uploadGithubRootPath: 'file-uploads',
-                  uploadGithubBranch: 'archives',
+                  uploadGithubRootPath: 'archives',
+                  uploadGithubBranch: 'file-uploads',
                 },
                 {
                   rootUrl: 'https://www.cgarts.or.jp/v1/kentei/past/index.html',
                   crawlerType: 'cgarts',
-                  uploadGithubRootPath: 'file-uploads',
-                  uploadGithubBranch: 'archives',
+                  uploadGithubRootPath: 'archives',
+                  uploadGithubBranch: 'file-uploads',
                 },
               ],
             },
