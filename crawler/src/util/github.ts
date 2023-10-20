@@ -75,9 +75,18 @@ interface GithubTree {
   url?: string;
 }
 
+interface GithubBlob {
+  url: string;
+  sha: string;
+}
 export interface GithubFileUploader {
   savepath: string;
   content: Buffer;
+}
+
+export interface GithubBlobWithPath {
+  savepath: string;
+  blob: GithubBlob;
 }
 
 export class Github {
@@ -153,20 +162,44 @@ export class Github {
       uploadFilePathes.push(uploader.savepath);
     }
     // clear and save memory
-    uploaders.splice(0)
+    uploaders.splice(0);
     const createdBlobs = await Promise.all(createdBlobPromises);
     if (createdBlobs.length <= 0) {
       return;
     }
+    const blobWithPathes: GithubBlobWithPath[] = createdBlobs.map((createdBlob, index) => {
+      return {
+        savepath: uploadFilePathes[index],
+        blob: createdBlob.data,
+      };
+    });
+    await this.commitFromUploadBlobs(blobWithPathes);
+  }
+
+  async uploadFile(content: Buffer): Promise<GithubBlob> {
+    const myUser = await this.loadSelfUser();
+    const base64Content = Buffer.from(content).toString('base64');
+    const createdBlobResponse = await octokit.rest.git.createBlob({
+      owner: myUser.login,
+      repo: this.targetRepo,
+      encoding: 'base64',
+      content: base64Content,
+    });
+    return createdBlobResponse.data;
+  }
+
+  async commitFromUploadBlobs(blobWithPathes: GithubBlobWithPath[]) {
+    console.log(blobWithPathes);
+    const myUser = await this.loadSelfUser();
     const createdTreeResponse = await octokit.rest.git.createTree({
       owner: myUser.login,
       repo: this.targetRepo,
-      tree: createdBlobs.map((createdBlob, index) => {
+      tree: blobWithPathes.map((blobWithPath) => {
         return {
           type: 'blob',
-          path: uploadFilePathes[index],
+          path: blobWithPath.savepath,
           mode: '100644',
-          sha: createdBlob.data.sha,
+          sha: blobWithPath.blob.sha,
         };
       }),
       base_tree: this.catchedlastCommitSha,
