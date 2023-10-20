@@ -91,6 +91,7 @@ export abstract class ScraperBase {
       await github.uploadAndCommitFiles(uploadBranchName, githubUploaders);
       */
       await github.commitFromUploadBlobs(blobWithPathes);
+      blobWithPathes.splice(0);
     }
   }
 }
