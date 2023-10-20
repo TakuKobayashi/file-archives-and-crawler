@@ -57,22 +57,31 @@ export abstract class ScraperBase {
   async downloadFilesAndUploadToGithubFromUrls(uploadBranchName: string, fileRootPath: string, downloadUrls: URL[]): Promise<void> {
     const github = new Github(process.env.UPLOAD_FILE_REPO);
     const pathTreeMap = await github.loadPathTreeMap(uploadBranchName);
-    const chunkDownloadFileUrls = chunk(downloadUrls, 10);
+    const chunkDownloadFileUrls = chunk(downloadUrls, 20);
     for (const downloadFileUrls of chunkDownloadFileUrls) {
-      const downloadPromises = [];
-      const willSavePathes = [];
+      //const downloadPromises = [];
+      //const willSavePathes = [];
+      const blobWithPathes = [];
       for (const downloadFileUrl of downloadFileUrls) {
         const willSavePath = path.join(fileRootPath, downloadFileUrl.hostname, downloadFileUrl.pathname).split(path.sep).join('/');
         if (pathTreeMap.has(willSavePath)) {
           continue;
         }
-        downloadPromises.push(axios.get(downloadFileUrl.href, { responseType: 'arraybuffer' }));
-        willSavePathes.push(willSavePath);
+        //        downloadPromises.push(axios.get(downloadFileUrl.href, { responseType: 'arraybuffer' }));
+        //        willSavePathes.push(willSavePath);
+        const fileContentResponse = await axios.get(downloadFileUrl.href, { responseType: 'arraybuffer' });
+        const uploadedBlob = await github.uploadFile(fileContentResponse.data);
+        blobWithPathes.push({
+          savepath: willSavePath,
+          blob: uploadedBlob,
+        });
       }
+      /*
       if (downloadPromises.length <= 0) {
         continue;
       }
-      const downloadResponses = await Promise.all(downloadPromises);
+      await github.commitFromUploadBlobs(blobWithPathes);
+
       const githubUploaders: GithubFileUploader[] = downloadResponses.map((downloadResponse, index) => {
         const willSavePath = willSavePathes[index];
         return {
@@ -81,6 +90,9 @@ export abstract class ScraperBase {
         };
       });
       await github.uploadAndCommitFiles(uploadBranchName, githubUploaders);
+      */
+      await github.commitFromUploadBlobs(blobWithPathes);
+      blobWithPathes.splice(0);
     }
   }
 }
