@@ -3,7 +3,7 @@ import axios from 'axios';
 import { chunk } from 'lodash';
 import * as path from 'path';
 import * as Encoding from 'encoding-japanese';
-import { Github, GithubFileUploader } from '@/util/github';
+import { Github } from '@/util/github';
 
 export abstract class ScraperBase {
   protected baseUrl: URL;
@@ -59,16 +59,13 @@ export abstract class ScraperBase {
     const pathTreeMap = await github.loadPathTreeMap(uploadBranchName);
     const chunkDownloadFileUrls = chunk(downloadUrls, 20);
     for (const downloadFileUrls of chunkDownloadFileUrls) {
-      //const downloadPromises = [];
-      //const willSavePathes = [];
       const blobWithPathes = [];
       for (const downloadFileUrl of downloadFileUrls) {
         const willSavePath = path.join(fileRootPath, downloadFileUrl.hostname, downloadFileUrl.pathname).split(path.sep).join('/');
         if (pathTreeMap.has(willSavePath)) {
           continue;
         }
-        //        downloadPromises.push(axios.get(downloadFileUrl.href, { responseType: 'arraybuffer' }));
-        //        willSavePathes.push(willSavePath);
+        // メモリの使用量削減のため直列に実行する
         const fileContentResponse = await axios.get(downloadFileUrl.href, { responseType: 'arraybuffer' });
         const uploadedBlob = await github.uploadFile(fileContentResponse.data);
         blobWithPathes.push({
@@ -80,16 +77,6 @@ export abstract class ScraperBase {
         continue;
       }
 
-      /*
-      const githubUploaders: GithubFileUploader[] = downloadResponses.map((downloadResponse, index) => {
-        const willSavePath = willSavePathes[index];
-        return {
-          savepath: willSavePath,
-          content: downloadResponse.data,
-        };
-      });
-      await github.uploadAndCommitFiles(uploadBranchName, githubUploaders);
-      */
       await github.commitFromUploadBlobs(blobWithPathes);
       blobWithPathes.splice(0);
     }
