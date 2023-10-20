@@ -189,6 +189,7 @@ export class Github {
   }
 
   async commitFromUploadBlobs(blobWithPathes: GithubBlobWithPath[]) {
+    console.log(blobWithPathes);
     const myUser = await this.loadSelfUser();
     const createdTreeResponse = await octokit.rest.git.createTree({
       owner: myUser.login,
