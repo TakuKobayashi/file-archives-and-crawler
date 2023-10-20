@@ -76,12 +76,11 @@ export abstract class ScraperBase {
           blob: uploadedBlob,
         });
       }
-      /*
-      if (downloadPromises.length <= 0) {
+      if (blobWithPathes.length <= 0) {
         continue;
       }
-      await github.commitFromUploadBlobs(blobWithPathes);
 
+      /*
       const githubUploaders: GithubFileUploader[] = downloadResponses.map((downloadResponse, index) => {
         const willSavePath = willSavePathes[index];
         return {
