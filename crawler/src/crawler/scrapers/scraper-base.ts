@@ -4,6 +4,7 @@ import { chunk } from 'lodash';
 import * as path from 'path';
 import * as Encoding from 'encoding-japanese';
 import { Github } from '@/util/github';
+import { RecordFileInfo } from '@/interfaces/archive-file-metum';
 
 export abstract class ScraperBase {
   protected baseUrl: URL;
@@ -55,6 +56,7 @@ export abstract class ScraperBase {
   }
 
   async downloadFilesAndUploadToGithubFromUrls(uploadBranchName: string, fileRootPath: string, downloadUrls: URL[]): Promise<void> {
+    const recordFiles: RecordFileInfo[] = [];
     const github = new Github(process.env.UPLOAD_FILE_REPO);
     const pathTreeMap = await github.loadPathTreeMap(uploadBranchName);
     const chunkDownloadFileUrls = chunk(downloadUrls, 20);
@@ -72,6 +74,12 @@ export abstract class ScraperBase {
           savepath: willSavePath,
           blob: uploadedBlob,
         });
+        recordFiles.push({
+          downloadFileUrl: downloadFileUrl,
+          filePath: willSavePath,
+          filename: path.basename(downloadFileUrl.pathname),
+          githubFileSha: uploadedBlob.sha,
+        });
       }
       if (blobWithPathes.length <= 0) {
         continue;
@@ -80,5 +88,12 @@ export abstract class ScraperBase {
       await github.commitFromUploadBlobs(blobWithPathes);
       blobWithPathes.splice(0);
     }
+    await github.recordFilesData(
+      { rootDirPath: 'archives-database', rootInfoFileName: '_root.json', hostnameInfoFileName: '_dbfile.json' },
+      {
+        rootUrl: this.baseUrl,
+        recordFiles: recordFiles,
+      },
+    );
   }
 }

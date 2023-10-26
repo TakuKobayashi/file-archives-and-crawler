@@ -1,6 +1,6 @@
 import { Octokit } from 'octokit';
-import * as _ from 'lodash';
 import { OctokitResponse } from '@octokit/types';
+import { RecordFileRootInfo, SaveFileInfo } from '@/interfaces/archive-file-metum';
 
 //const targetBranch = 'master';
 const octokit = new Octokit({ auth: process.env.PERSONAL_ACCESS_TOKEN });
@@ -89,6 +89,11 @@ export interface GithubBlobWithPath {
   blob: GithubBlob;
 }
 
+interface CommitFromUploadBlobsResult {
+  committedSha: string;
+  createdTrees: GithubTree[];
+}
+
 export class Github {
   private targetRepo: string;
   private cachedMyUser: GithubUser | null = null;
@@ -173,7 +178,11 @@ export class Github {
         blob: createdBlob.data,
       };
     });
-    await this.commitFromUploadBlobs(blobWithPathes);
+    const result = await this.commitFromUploadBlobs(blobWithPathes);
+    for (const tree of result.createdTrees) {
+      this.catchedPathTreeMap.set(tree.path, tree);
+    }
+    this.catchedlastCommitSha = result.committedSha;
   }
 
   async uploadFile(content: Buffer): Promise<GithubBlob> {
@@ -188,7 +197,7 @@ export class Github {
     return createdBlobResponse.data;
   }
 
-  async commitFromUploadBlobs(blobWithPathes: GithubBlobWithPath[]) {
+  async commitFromUploadBlobs(blobWithPathes: GithubBlobWithPath[]): Promise<CommitFromUploadBlobsResult> {
     const myUser = await this.loadSelfUser();
     const createdTreeResponse = await octokit.rest.git.createTree({
       owner: myUser.login,
@@ -219,10 +228,49 @@ export class Github {
       ref: `heads/${this.cachedTargetBranch.name}`,
       sha: createdCommitSha,
     });
-    for (const tree of createdTree.tree) {
-      this.catchedPathTreeMap.set(tree.path, tree);
+    return { committedSha: createdCommitSha, createdTrees: createdTree.tree };
+  }
+
+  async recordFilesData(saveFileInfo: SaveFileInfo, recordFileRoot: RecordFileRootInfo) {
+    const hostnameRecordFileInfoMap: Map<string, { [key: string]: string }[]> = new Map();
+    for (const recordFile of recordFileRoot.recordFiles) {
+      const downloadFileUrl = recordFile.downloadFileUrl;
+      if (!hostnameRecordFileInfoMap.has(downloadFileUrl.hostname)) {
+        hostnameRecordFileInfoMap.set(downloadFileUrl.hostname, []);
+      }
+      const recordFileInfos = hostnameRecordFileInfoMap.get(downloadFileUrl.hostname);
+      recordFileInfos.push({
+        fromUrl: recordFile.downloadFileUrl.href,
+        filePath: recordFile.filePath,
+        filename: recordFile.filename,
+        githubSha: recordFile.githubFileSha,
+      });
+      hostnameRecordFileInfoMap.set(downloadFileUrl.hostname, recordFileInfos);
     }
-    this.catchedlastCommitSha = createdCommitSha;
+    const archiveHostnames = Array.from(hostnameRecordFileInfoMap.keys());
+    const rootJson = JSON.stringify(
+      archiveHostnames.map((archiveHostname) => {
+        return {
+          archiveHostname: archiveHostname,
+          rootUrls: [recordFileRoot.rootUrl.href],
+        };
+      }),
+    );
+    const blobWithPathes: GithubBlobWithPath[] = [];
+    const rootJsonBlob = await this.uploadFile(Buffer.from(rootJson, 'utf-8'));
+    blobWithPathes.push({
+      savepath: [saveFileInfo.rootDirPath, saveFileInfo.rootInfoFileName].join('/'),
+      blob: rootJsonBlob,
+    });
+    for (const archiveHostname of archiveHostnames) {
+      const recordFileInfo = hostnameRecordFileInfoMap.get(archiveHostname);
+      const recordFileInfoJsonBlob = await this.uploadFile(Buffer.from(JSON.stringify(recordFileInfo), 'utf-8'));
+      blobWithPathes.push({
+        savepath: [saveFileInfo.rootDirPath, archiveHostname, saveFileInfo.hostnameInfoFileName].join('/'),
+        blob: recordFileInfoJsonBlob,
+      });
+    }
+    await this.commitFromUploadBlobs(blobWithPathes);
   }
 
   async clearCache() {
